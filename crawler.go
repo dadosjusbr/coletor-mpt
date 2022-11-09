@@ -47,7 +47,7 @@ func (c crawler) crawl() ([]string, error) {
 	ctx, cancel = context.WithTimeout(ctx, c.generalTimeout)
 	defer cancel()
 
-	log.Printf("Realizando seleção - Contracheque (%s)...", c.year)
+	log.Printf("Selecionando contracheque (%s/%s)...", c.month, c.year)
 	if err := c.selecionaContracheque(ctx, c.year); err != nil {
 		log.Fatalf("Erro no setup:%v", err)
 	}
@@ -59,7 +59,7 @@ func (c crawler) crawl() ([]string, error) {
 		log.Fatalf("Erro no setup:%v", err)
 	}
 	log.Printf("Download realizado com sucesso!\n")
-	log.Printf("Realizando seleção - Indenizações (%s)...", c.year)
+	log.Printf("Selecionando indenizações (%s/%s)...", c.month, c.year)
 	if err := c.selecionaVerbas(ctx, c.year); err != nil {
 		log.Fatalf("Erro no setup:%v", err)
 	}
@@ -90,7 +90,9 @@ func (c crawler) selecionaVerbas(ctx context.Context, year string) error {
 	var buf3 []byte
 
 	chromedp.Run(ctx,
-		chromedp.DoubleClick(`//*[@id="j_idt95"]`, chromedp.BySearch, chromedp.NodeVisible),
+		chromedp.Click(`//*[@id="sm-contracheque"]`, chromedp.BySearch, chromedp.NodeReady),
+		chromedp.Sleep(c.timeBetweenSteps),
+		chromedp.Click(`//*[@id="j_idt95"]`, chromedp.BySearch, chromedp.NodeReady),
 		chromedp.Sleep(c.timeBetweenSteps),
 		chromedp.FullScreenshot(&buf1, 90),
 	)
