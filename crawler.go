@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -47,79 +46,68 @@ func (c crawler) crawl() ([]string, error) {
 	ctx, cancel = context.WithTimeout(ctx, c.generalTimeout)
 	defer cancel()
 
-	log.Printf("Selecionando contracheque (%s/%s)...", c.month, c.year)
-	if err := c.selecionaContracheque(ctx, c.year); err != nil {
+	// Contracheques
+	log.Printf("Selecionando contracheques (%s/%s)...", c.month, c.year)
+	if err := c.selecionaContracheque(ctx); err != nil {
 		log.Fatalf("Erro no setup:%v", err)
 	}
 	log.Printf("Seleção realizada com sucesso!\n")
 
-	log.Printf("Realizando download (%s)...", c.year)
+	log.Printf("Realizando download (%s/%s)...", c.month, c.year)
 	cqFname := c.downloadFilePath("contracheques")
 	if err := c.exportaPlanilha(ctx, cqFname); err != nil {
 		log.Fatalf("Erro no setup:%v", err)
 	}
 	log.Printf("Download realizado com sucesso!\n")
+
+	// Verbas indenizatórias
 	log.Printf("Selecionando indenizações (%s/%s)...", c.month, c.year)
-	if err := c.selecionaVerbas(ctx, c.year); err != nil {
+	if err := c.selecionaVerbas(ctx); err != nil {
 		log.Fatalf("Erro no setup:%v", err)
 	}
 	log.Printf("Seleção realizada com sucesso!\n")
 
-	log.Printf("Realizando download (%s)...", c.year)
+	log.Printf("Realizando download (%s/%s)...", c.month, c.year)
 	iFname := c.downloadFilePath("indenizacoes")
 	if err := c.exportaPlanilha(ctx, iFname); err != nil {
 		log.Fatalf("Erro no setup:%v", err)
 	}
 	log.Printf("Download realizado com sucesso!\n")
-	return []string{"teste"}, nil
+	return []string{cqFname, iFname}, nil
 }
 
-func (c crawler) selecionaContracheque(ctx context.Context, year string) error {
+func (c crawler) selecionaContracheque(ctx context.Context) error {
 	return chromedp.Run(ctx,
 		chromedp.Navigate("https://mpt.mp.br/MPTransparencia/pages/portal/remuneracaoMembrosAtivos.xhtml"),
 		chromedp.Sleep(c.timeBetweenSteps),
-		chromedp.SetValue(`//*[@id="j_idt136"]`, year, chromedp.BySearch),
+		// Seleciona o ano
+		chromedp.SetValue(`//*[@id="j_idt136"]`, c.year, chromedp.BySearch),
 		chromedp.Sleep(c.timeBetweenSteps),
+		// Consulta
 		chromedp.Click(`//*[@id="j_idt139"]`, chromedp.BySearch, chromedp.NodeVisible),
 		chromedp.Sleep(c.timeBetweenSteps),
 	)
 }
-func (c crawler) selecionaVerbas(ctx context.Context, year string) error {
-	var buf1 []byte
-	var buf2 []byte
-	var buf3 []byte
-
-	chromedp.Run(ctx,
+func (c crawler) selecionaVerbas(ctx context.Context) error {
+	return chromedp.Run(ctx,
+		// Clica na aba Contracheque
 		chromedp.Click(`//*[@id="sm-contracheque"]`, chromedp.BySearch, chromedp.NodeReady),
 		chromedp.Sleep(c.timeBetweenSteps),
+		// Clica em Verbas Indenizatórias e Outras Remunerações Temporárias
 		chromedp.Click(`//*[@id="j_idt95"]`, chromedp.BySearch, chromedp.NodeReady),
 		chromedp.Sleep(c.timeBetweenSteps),
-		chromedp.FullScreenshot(&buf1, 90),
-	)
-	if err := ioutil.WriteFile("elementScreenshot1.png", buf1, 0o644); err != nil {
-		log.Fatal(err)
-	}
-	chromedp.Run(ctx,
-		chromedp.SetValue(`//*[@id="j_idt142"]`, year, chromedp.BySearch, chromedp.NodeReady),
+		// Seleciona o ano
+		chromedp.SetValue(`//*[@id="j_idt142"]`, c.year, chromedp.BySearch, chromedp.NodeReady),
 		chromedp.Sleep(c.timeBetweenSteps),
-		chromedp.FullScreenshot(&buf2, 90),
-	)
-	if err := ioutil.WriteFile("elementScreenshot2.png", buf2, 0o644); err != nil {
-		log.Fatal(err)
-	}
-	chromedp.Run(ctx,
+		// Consulta
 		chromedp.Click(`//*[@id="consultaForm"]/div[2]/div/input`, chromedp.BySearch, chromedp.NodeVisible),
 		chromedp.Sleep(c.timeBetweenSteps),
-		chromedp.FullScreenshot(&buf3, 90),
 	)
-	if err := ioutil.WriteFile("elementScreenshot3.png", buf3, 0o644); err != nil {
-		log.Fatal(err)
-	}
-	return nil
 }
 
 // Retorna os caminhos completos dos arquivos baixados.
 func (c crawler) downloadFilePath(prefix string) string {
+	// A extensão das planilhas de contracheque é XLS, enquanto a das indenizações são ODS
 	if strings.Contains(prefix, "contracheques") {
 		return filepath.Join(c.output, fmt.Sprintf("membros-ativos-%s-%s-%s.xls", prefix, c.month, c.year))
 	} else {
@@ -142,19 +130,19 @@ func (c crawler) exportaPlanilha(ctx context.Context, fName string) error {
 		"12": 11,
 	}
 	var selectMonth string
+	// O XPath para o botão de download de contracheques e indenizações é diferente.
 	if strings.Contains(fName, "contracheques") {
 		selectMonth = fmt.Sprintf(`//*[@id="tabelaRemuneracao:%d:j_idt158"]/span`, months[c.month])
 	} else {
 		selectMonth = fmt.Sprintf(`//*[@id="tabelaMeses:%d:linkArq"]/span`, months[c.month])
 	}
-	// verbas // // (ods)
 	chromedp.Run(ctx,
 		// Altera o diretório de download
 		browser.SetDownloadBehavior(browser.SetDownloadBehaviorBehaviorAllowAndName).
 			WithDownloadPath(c.output).
 			WithEventsEnabled(true),
-		// Clica no botão de download
-		chromedp.Click(selectMonth, chromedp.BySearch, chromedp.NodeVisible), //*[@id="tabelaRemuneracao:8:j_idt158"]
+		// Clica no botão de download do respectivo mês
+		chromedp.Click(selectMonth, chromedp.BySearch, chromedp.NodeVisible),
 		chromedp.Sleep(c.downloadTimeout),
 	)
 
