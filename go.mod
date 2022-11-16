@@ -1,4 +1,4 @@
-module coletor-mpma
+module coletor-mpt
 
 go 1.17
 
