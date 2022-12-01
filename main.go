@@ -12,7 +12,7 @@ import (
 const (
 	defaultGeneralTimeout      = 4 * time.Minute  // Duração máxima total da coleta de todos os arquivos. Valor padrão calculado a partir de uma média de execuções ~4.5min
 	defaulTimeBetweenSteps     = 5 * time.Second  // Tempo de espera entre passos do coletor.
-	defaultFileDownloadTimeout = 20 * time.Second // Duração que o coletor deve esperar até que o download de cada um dos arquivos seja concluído
+	defaultFileDownloadTimeout = 40 * time.Second // Duração que o coletor deve esperar até que o download de cada um dos arquivos seja concluído
 )
 
 func main() {
