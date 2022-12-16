@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/chromedp/cdproto/browser"
+	"github.com/chromedp/cdproto/runtime"
 	"github.com/chromedp/chromedp"
 )
 
@@ -141,11 +142,21 @@ func (c crawler) exportaPlanilha(ctx context.Context, fName string) error {
 		browser.SetDownloadBehavior(browser.SetDownloadBehaviorBehaviorAllowAndName).
 			WithDownloadPath(c.output).
 			WithEventsEnabled(true),
+		// Expandindo a tela: devido ao rodapé da página que dificultava a ação de clicar no botão de download
+		chromedp.ActionFunc(func(ctx context.Context) error {
+			_, exp, err := runtime.Evaluate(`window.scrollTo(0,document.body.scrollHeight);`).Do(ctx)
+			if err != nil {
+				return err
+			}
+			if exp != nil {
+				return exp
+			}
+			return nil
+		}),
 		// Clica no botão de download do respectivo mês
-		chromedp.Click(selectMonth, chromedp.BySearch, chromedp.NodeVisible),
+		chromedp.Click(selectMonth, chromedp.BySearch, chromedp.NodeReady),
 		chromedp.Sleep(c.downloadTimeout),
 	)
-
 	if err := nomeiaDownload(c.output, fName); err != nil {
 		return fmt.Errorf("erro renomeando arquivo (%s): %v", fName, err)
 	}
