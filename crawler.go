@@ -12,6 +12,7 @@ import (
 	"github.com/chromedp/cdproto/browser"
 	"github.com/chromedp/cdproto/runtime"
 	"github.com/chromedp/chromedp"
+	"github.com/dadosjusbr/status"
 )
 
 type crawler struct {
@@ -50,28 +51,28 @@ func (c crawler) crawl() ([]string, error) {
 	// Contracheques
 	log.Printf("Selecionando contracheques (%s/%s)...", c.month, c.year)
 	if err := c.selecionaContracheque(ctx); err != nil {
-		log.Fatalf("Erro no setup:%v", err)
+		status.ExitFromError(err)
 	}
 	log.Printf("Seleção realizada com sucesso!\n")
 
 	log.Printf("Realizando download (%s/%s)...", c.month, c.year)
 	cqFname := c.downloadFilePath("contracheques")
 	if err := c.exportaPlanilha(ctx, cqFname); err != nil {
-		log.Fatalf("Erro no setup:%v", err)
+		status.ExitFromError(err)
 	}
 	log.Printf("Download realizado com sucesso!\n")
 
 	// Verbas indenizatórias
 	log.Printf("Selecionando indenizações (%s/%s)...", c.month, c.year)
 	if err := c.selecionaVerbas(ctx); err != nil {
-		log.Fatalf("Erro no setup:%v", err)
+		status.ExitFromError(err)
 	}
 	log.Printf("Seleção realizada com sucesso!\n")
 
 	log.Printf("Realizando download (%s/%s)...", c.month, c.year)
 	iFname := c.downloadFilePath("indenizacoes")
 	if err := c.exportaPlanilha(ctx, iFname); err != nil {
-		log.Fatalf("Erro no setup:%v", err)
+		status.ExitFromError(err)
 	}
 	log.Printf("Download realizado com sucesso!\n")
 	return []string{cqFname, iFname}, nil
@@ -137,7 +138,9 @@ func (c crawler) exportaPlanilha(ctx context.Context, fName string) error {
 	} else {
 		selectMonth = fmt.Sprintf(`//*[@id="tabelaMeses:%d:linkArq"]/span`, months[c.month])
 	}
-	chromedp.Run(ctx,
+	tctx, tcancel := context.WithTimeout(ctx, 30*time.Second)
+	defer tcancel()
+	if err := chromedp.Run(tctx,
 		// Altera o diretório de download
 		browser.SetDownloadBehavior(browser.SetDownloadBehaviorBehaviorAllowAndName).
 			WithDownloadPath(c.output).
@@ -156,12 +159,14 @@ func (c crawler) exportaPlanilha(ctx context.Context, fName string) error {
 		// Clica no botão de download do respectivo mês
 		chromedp.Click(selectMonth, chromedp.BySearch, chromedp.NodeReady),
 		chromedp.Sleep(c.downloadTimeout),
-	)
+	); err != nil {
+		return status.NewError(status.DataUnavailable, fmt.Errorf("não há dados disponíveis"))
+	}
 	if err := nomeiaDownload(c.output, fName); err != nil {
-		return fmt.Errorf("erro renomeando arquivo (%s): %v", fName, err)
+		status.ExitFromError(err)
 	}
 	if _, err := os.Stat(fName); os.IsNotExist(err) {
-		return fmt.Errorf("download do arquivo de %s não realizado", fName)
+		return status.NewError(status.SystemError, fmt.Errorf("download do arquivo de %s não realizado", fName))
 	}
 	return nil
 }
@@ -169,7 +174,7 @@ func nomeiaDownload(output, fName string) error {
 	// Identifica qual foi o último arquivo
 	files, err := os.ReadDir(output)
 	if err != nil {
-		return fmt.Errorf("erro lendo diretório %s: %v", output, err)
+		return status.NewError(status.SystemError, fmt.Errorf("erro lendo diretório %s: %w", output, err))
 	}
 	var newestFPath string
 	var newestTime int64 = 0
@@ -177,7 +182,7 @@ func nomeiaDownload(output, fName string) error {
 		fPath := filepath.Join(output, f.Name())
 		fi, err := os.Stat(fPath)
 		if err != nil {
-			return fmt.Errorf("erro obtendo informações sobre arquivo %s: %v", fPath, err)
+			return status.NewError(status.SystemError, fmt.Errorf("erro obtendo informações sobre arquivo %s: %w", fPath, err))
 		}
 		currTime := fi.ModTime().Unix()
 		if currTime > newestTime {
@@ -187,7 +192,7 @@ func nomeiaDownload(output, fName string) error {
 	}
 	// Renomeia o último arquivo modificado.
 	if err := os.Rename(newestFPath, fName); err != nil {
-		return fmt.Errorf("erro renomeando último arquivo modificado (%s)->(%s): %v", newestFPath, fName, err)
+		return status.NewError(status.DataUnavailable, fmt.Errorf("não há dados disponíveis"))
 	}
 	return nil
 }
