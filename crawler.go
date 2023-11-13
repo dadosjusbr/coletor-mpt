@@ -83,10 +83,10 @@ func (c crawler) selecionaContracheque(ctx context.Context) error {
 		chromedp.Navigate("https://mpt.mp.br/MPTransparencia/pages/portal/remuneracaoMembrosAtivos.xhtml"),
 		chromedp.Sleep(c.timeBetweenSteps),
 		// Seleciona o ano
-		chromedp.SetValue(`//*[@id="j_idt136"]`, c.year, chromedp.BySearch),
+		chromedp.SetValue(`//*[@id="j_idt179"]`, c.year, chromedp.BySearch),
 		chromedp.Sleep(c.timeBetweenSteps),
 		// Consulta
-		chromedp.Click(`//*[@id="j_idt139"]`, chromedp.BySearch, chromedp.NodeVisible),
+		chromedp.Click(`//*[@id="j_idt182"]`, chromedp.BySearch, chromedp.NodeVisible),
 		chromedp.Sleep(c.timeBetweenSteps),
 	)
 }
@@ -96,10 +96,10 @@ func (c crawler) selecionaVerbas(ctx context.Context) error {
 		chromedp.Click(`//*[@id="sm-contracheque"]`, chromedp.BySearch, chromedp.NodeReady),
 		chromedp.Sleep(c.timeBetweenSteps),
 		// Clica em Verbas Indenizatórias e Outras Remunerações Temporárias
-		chromedp.Click(`//*[@id="j_idt95"]`, chromedp.BySearch, chromedp.NodeReady),
+		chromedp.Click(`//*[@id="j_idt132"]`, chromedp.BySearch, chromedp.NodeReady),
 		chromedp.Sleep(c.timeBetweenSteps),
 		// Seleciona o ano
-		chromedp.SetValue(`//*[@id="j_idt142"]`, c.year, chromedp.BySearch, chromedp.NodeReady),
+		chromedp.SetValue(`//*[@id="j_idt185"]`, c.year, chromedp.BySearch, chromedp.NodeReady),
 		chromedp.Sleep(c.timeBetweenSteps),
 		// Consulta
 		chromedp.Click(`//*[@id="consultaForm"]/div[2]/div/input`, chromedp.BySearch, chromedp.NodeVisible),
@@ -134,9 +134,9 @@ func (c crawler) exportaPlanilha(ctx context.Context, fName string) error {
 	var selectMonth string
 	// O XPath para o botão de download de contracheques e indenizações é diferente.
 	if strings.Contains(fName, "contracheques") {
-		selectMonth = fmt.Sprintf(`//*[@id="tabelaRemuneracao:%d:j_idt158"]/span`, months[c.month])
+		selectMonth = fmt.Sprintf(`//*[@id="tabelaRemuneracao:%d:j_idt201"]/span`, months[c.month])
 	} else {
-		selectMonth = fmt.Sprintf(`//*[@id="tabelaMeses:%d:linkArq"]/span`, months[c.month])
+		selectMonth = fmt.Sprintf(`//*[@id="tabelaMeses:%d:linkArq"]`, months[c.month])
 	}
 	tctx, tcancel := context.WithTimeout(ctx, 30*time.Second)
 	defer tcancel()
