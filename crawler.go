@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/chromedp/cdproto/browser"
-	"github.com/chromedp/cdproto/runtime"
 	"github.com/chromedp/chromedp"
 	"github.com/dadosjusbr/status"
 )
@@ -80,6 +79,7 @@ func (c crawler) crawl() ([]string, error) {
 
 func (c crawler) selecionaContracheque(ctx context.Context) error {
 	return chromedp.Run(ctx,
+		chromedp.EmulateViewport(1920, 1080),
 		chromedp.Navigate("https://mpt.mp.br/MPTransparencia/pages/portal/remuneracaoMembrosAtivos.xhtml"),
 		chromedp.Sleep(c.timeBetweenSteps),
 		// Seleciona o ano
@@ -92,7 +92,7 @@ func (c crawler) selecionaContracheque(ctx context.Context) error {
 }
 func (c crawler) selecionaVerbas(ctx context.Context) error {
 	return chromedp.Run(ctx,
-		// Clica na aba Contracheque
+		// // Clica na aba Contracheque
 		chromedp.Click(`//*[@id="sm-contracheque"]`, chromedp.BySearch, chromedp.NodeReady),
 		chromedp.Sleep(c.timeBetweenSteps),
 		// Clica em Verbas Indenizatórias e Outras Remunerações Temporárias
@@ -145,17 +145,6 @@ func (c crawler) exportaPlanilha(ctx context.Context, fName string) error {
 		browser.SetDownloadBehavior(browser.SetDownloadBehaviorBehaviorAllowAndName).
 			WithDownloadPath(c.output).
 			WithEventsEnabled(true),
-		// Expandindo a tela: devido ao rodapé da página que dificultava a ação de clicar no botão de download
-		chromedp.ActionFunc(func(ctx context.Context) error {
-			_, exp, err := runtime.Evaluate(`window.scrollTo(0,document.body.scrollHeight);`).Do(ctx)
-			if err != nil {
-				return err
-			}
-			if exp != nil {
-				return exp
-			}
-			return nil
-		}),
 		// Clica no botão de download do respectivo mês
 		chromedp.Click(selectMonth, chromedp.BySearch, chromedp.NodeReady),
 		chromedp.Sleep(c.downloadTimeout),
