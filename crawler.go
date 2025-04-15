@@ -134,7 +134,7 @@ func (c crawler) exportaPlanilha(ctx context.Context, fName string) error {
 	var selectMonth string
 	// O XPath para o botão de download de contracheques e indenizações é diferente.
 	if strings.Contains(fName, "contracheques") {
-		selectMonth = fmt.Sprintf(`//*[@id="tabelaRemuneracao:%d:j_idt199"]/span`, months[c.month])
+		selectMonth = fmt.Sprintf(`//*[@id="tabelaRemuneracao:%d:j_idt197"]/span`, months[c.month])
 	} else {
 		selectMonth = fmt.Sprintf(`//*[@id="tabelaMeses:%d:linkArq"]`, months[c.month])
 	}
