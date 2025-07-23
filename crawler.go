@@ -83,10 +83,10 @@ func (c crawler) selecionaContracheque(ctx context.Context) error {
 		chromedp.Navigate("https://mpt.mp.br/MPTransparencia/pages/portal/remuneracaoMembrosAtivos.xhtml"),
 		chromedp.Sleep(c.timeBetweenSteps),
 		// Seleciona o ano
-		chromedp.SetValue(`//*[@id="j_idt177"]`, c.year, chromedp.BySearch),
+		chromedp.SetValue(`//*[@id="j_idt175"]`, c.year, chromedp.BySearch),
 		chromedp.Sleep(c.timeBetweenSteps),
 		// Consulta
-		chromedp.Click(`//*[@id="j_idt180"]`, chromedp.BySearch, chromedp.NodeVisible),
+		chromedp.Click(`//*[@id="j_idt178"]`, chromedp.BySearch, chromedp.NodeVisible),
 		chromedp.Sleep(c.timeBetweenSteps),
 	)
 }
@@ -96,10 +96,10 @@ func (c crawler) selecionaVerbas(ctx context.Context) error {
 		chromedp.Click(`//*[@id="sm-contracheque"]`, chromedp.BySearch, chromedp.NodeReady),
 		chromedp.Sleep(c.timeBetweenSteps),
 		// Clica em Verbas Indenizatórias e Outras Remunerações Temporárias
-		chromedp.Click(`//*[@id="j_idt130"]`, chromedp.BySearch, chromedp.NodeReady),
+		chromedp.Click(`//*[@id="j_idt131"]`, chromedp.BySearch, chromedp.NodeReady),
 		chromedp.Sleep(c.timeBetweenSteps),
 		// Seleciona o ano
-		chromedp.SetValue(`//*[@id="j_idt183"]`, c.year, chromedp.BySearch, chromedp.NodeReady),
+		chromedp.SetValue(`//*[@id="j_idt181"]`, c.year, chromedp.BySearch, chromedp.NodeReady),
 		chromedp.Sleep(c.timeBetweenSteps),
 		// Consulta
 		chromedp.Click(`//*[@id="consultaForm"]/div[2]/div/input`, chromedp.BySearch, chromedp.NodeVisible),
@@ -134,7 +134,7 @@ func (c crawler) exportaPlanilha(ctx context.Context, fName string) error {
 	var selectMonth string
 	// O XPath para o botão de download de contracheques e indenizações é diferente.
 	if strings.Contains(fName, "contracheques") {
-		selectMonth = fmt.Sprintf(`//*[@id="tabelaRemuneracao:%d:j_idt199"]/span`, months[c.month])
+		selectMonth = fmt.Sprintf(`//*[@id="tabelaRemuneracao:%d:j_idt197"]/span`, months[c.month])
 	} else {
 		selectMonth = fmt.Sprintf(`//*[@id="tabelaMeses:%d:linkArq"]`, months[c.month])
 	}
